@@ -17,13 +17,22 @@ def render_world(state: WorldState) -> str:
     if not isinstance(state, WorldState):
         raise TypeError("state must be WorldState")
 
-    lines = [f"step={state.time.step}"]
+    lines = [f"step={state.time.step}", "terrain:"]
 
     for y in range(state.world.dimensions.height):
         row = "".join(
             _TERRAIN_SYMBOLS[
                 state.world.terrain_at(Coordinate(x=x, y=y))
             ]
+            for x in range(state.world.dimensions.width)
+        )
+        lines.append(row)
+
+    lines.append("moisture:")
+
+    for y in range(state.world.dimensions.height):
+        row = " ".join(
+            f"{state.world.moisture_at(Coordinate(x=x, y=y)):03d}"
             for x in range(state.world.dimensions.width)
         )
         lines.append(row)

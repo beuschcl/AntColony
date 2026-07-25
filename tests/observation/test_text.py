@@ -48,9 +48,50 @@ def test_render_world_displays_time_and_terrain() -> None:
 
     assert snapshot == (
         "step=7\n"
+        "terrain:\n"
         "SMR\n"
-        "WMS"
+        "WMS\n"
+        "moisture:\n"
+        "010 020 030\n"
+        "040 050 060"
     )
+
+
+def test_render_world_displays_moisture_in_row_major_order() -> None:
+    state = make_state(step=3)
+
+    snapshot = render_world(state)
+
+    moisture_lines = snapshot.split("\n")[snapshot.split("\n").index("moisture:") + 1:]
+    assert moisture_lines == ["010 020 030", "040 050 060"]
+
+
+def test_render_world_formats_moisture_values_as_three_digits() -> None:
+    dimensions = WorldDimensions(width=4, height=1)
+    terrain = TerrainMap(
+        dimensions=dimensions,
+        tiles=(
+            TerrainType.SOIL,
+            TerrainType.SOIL,
+            TerrainType.SOIL,
+            TerrainType.SOIL,
+        ),
+    )
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(0, 5, 99, 100),
+    )
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+    )
+    state = WorldState(world=world, time=SimulationTime(step=0))
+
+    snapshot = render_world(state)
+
+    moisture_line = snapshot.split("\n")[-1]
+    assert moisture_line == "000 005 099 100"
 
 
 def test_render_world_is_deterministic() -> None:

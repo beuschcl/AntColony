@@ -1,6 +1,6 @@
 """Plain-text observation of the simulated world."""
 
-from ant_colony.domain import Coordinate, TerrainType, WorldState
+from ant_colony.domain import Coordinate, ResourceType, TerrainType, WorldState
 
 
 _TERRAIN_SYMBOLS: dict[TerrainType, str] = {
@@ -33,6 +33,15 @@ def render_world(state: WorldState) -> str:
     for y in range(state.world.dimensions.height):
         row = " ".join(
             f"{state.world.moisture_at(Coordinate(x=x, y=y)):03d}"
+            for x in range(state.world.dimensions.width)
+        )
+        lines.append(row)
+
+    lines.append("food:")
+
+    for y in range(state.world.dimensions.height):
+        row = " ".join(
+            f"{state.world.resource_quantity_at(Coordinate(x=x, y=y), ResourceType.FOOD):03d}"
             for x in range(state.world.dimensions.width)
         )
         lines.append(row)

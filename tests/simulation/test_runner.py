@@ -1,6 +1,7 @@
 import pytest
 
 from ant_colony.domain import (
+    MoistureMap,
     SimulationTime,
     TerrainMap,
     TerrainType,
@@ -17,7 +18,15 @@ def make_state(step: int = 0) -> WorldState:
         dimensions=dimensions,
         tiles=(TerrainType.SOIL, TerrainType.MUD),
     )
-    world = World(dimensions=dimensions, terrain=terrain)
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(25, 75),
+    )
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+    )
 
     return WorldState(
         world=world,

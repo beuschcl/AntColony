@@ -3,6 +3,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from ant_colony.domain import (
+    MoistureMap,
     SimulationTime,
     TerrainMap,
     TerrainType,
@@ -18,7 +19,11 @@ def make_world() -> World:
         dimensions=dimensions,
         tiles=(TerrainType.SOIL, TerrainType.MUD),
     )
-    return World(dimensions=dimensions, terrain=terrain)
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(25, 75),
+    )
+    return World(dimensions=dimensions, terrain=terrain, moisture=moisture)
 
 
 def test_world_state_preserves_its_world() -> None:

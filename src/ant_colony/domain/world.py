@@ -41,18 +41,14 @@ class World:
 
         return self.moisture.moisture_at(coordinate)
 
+    def contains(self, coordinate: Coordinate) -> bool:
+        """Return whether a coordinate is within the world bounds."""
+
+        return self.dimensions.contains(coordinate)
+
     def iter_coordinates(self):
         """Return coordinates in deterministic row-major order."""
 
         for y in range(self.dimensions.height):
             for x in range(self.dimensions.width):
                 yield Coordinate(x=x, y=y)
-
-
-@dataclass(frozen=True, slots=True)
-class World:
-    """The spatial foundation of the simulated environment."""
-
-    dimensions: WorldDimensions
-    terrain: TerrainMap
-    moisture: MoistureMap

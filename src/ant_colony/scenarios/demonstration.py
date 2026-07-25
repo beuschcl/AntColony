@@ -1,6 +1,7 @@
 """Deterministic scenario used to demonstrate the world foundation."""
 
 from ant_colony.domain import (
+    MoistureMap,
     TerrainMap,
     TerrainType,
     World,

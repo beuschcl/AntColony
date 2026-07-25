@@ -42,12 +42,12 @@ def test_run_steps_advances_the_requested_number_of_steps() -> None:
     assert final_state.time == SimulationTime(step=8)
 
 
-def test_run_steps_preserves_the_world() -> None:
+def test_run_steps_preserves_the_terrain() -> None:
     initial_state = make_state()
 
     final_state = run_steps(initial_state, steps=5)
 
-    assert final_state.world is initial_state.world
+    assert final_state.world.terrain is initial_state.world.terrain
 
 
 def test_run_steps_does_not_modify_the_initial_state() -> None:

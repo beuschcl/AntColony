@@ -9,7 +9,7 @@ def main() -> None:
     """Display the demonstration world before and after five steps."""
 
     initial_state = create_demonstration_state()
-    final_state = run_steps(initial_state, steps=5)
+    final_state = run_steps(initial_state, steps=5, evaporation_rate=1)
 
     print(render_world(initial_state))
     print()

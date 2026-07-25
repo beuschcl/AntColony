@@ -5,6 +5,8 @@ import pytest
 from ant_colony.domain import (
     Coordinate,
     MoistureMap,
+    ResourceDeposit,
+    ResourceType,
     SimulationTime,
     TerrainMap,
     TerrainType,
@@ -18,12 +20,18 @@ from ant_colony.simulation import advance_world, run_steps
 def make_state(
     tiles: tuple[TerrainType, ...],
     values: tuple[int, ...],
+    resource_deposits: tuple[ResourceDeposit, ...] = (),
     step: int = 0,
 ) -> WorldState:
     dimensions = WorldDimensions(width=len(tiles), height=1)
     terrain = TerrainMap(dimensions=dimensions, tiles=tiles)
     moisture = MoistureMap(dimensions=dimensions, values=values)
-    world = World(dimensions=dimensions, terrain=terrain, moisture=moisture)
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+        resource_deposits=resource_deposits,
+    )
     return WorldState(world=world, time=SimulationTime(step=step))
 
 
@@ -381,3 +389,63 @@ def test_processing_order_does_not_affect_result() -> None:
     assert next_state.world.moisture_at(Coordinate(0, 0)) == 8
     assert next_state.world.moisture_at(Coordinate(1, 0)) == 18
     assert next_state.world.moisture_at(Coordinate(2, 0)) == 28
+
+
+def test_resource_deposits_are_preserved_after_one_evaporation_step() -> None:
+    resource_deposits = (
+        ResourceDeposit(
+            coordinate=Coordinate(0, 0),
+            resource_type=ResourceType.FOOD,
+            quantity=25,
+        ),
+    )
+    state = make_state(
+        tiles=(TerrainType.SOIL,),
+        values=(40,),
+        resource_deposits=resource_deposits,
+    )
+
+    next_state = advance_world(state, evaporation_rate=4)
+
+    assert next_state.world.resource_deposits is resource_deposits
+    assert next_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25
+
+
+def test_resource_deposits_remain_unchanged_over_multiple_steps() -> None:
+    resource_deposits = (
+        ResourceDeposit(
+            coordinate=Coordinate(0, 0),
+            resource_type=ResourceType.FOOD,
+            quantity=25,
+        ),
+    )
+    initial_state = make_state(
+        tiles=(TerrainType.SOIL,),
+        values=(40,),
+        resource_deposits=resource_deposits,
+    )
+
+    final_state = run_steps(initial_state, steps=3, evaporation_rate=2)
+
+    assert final_state.world.resource_deposits is resource_deposits
+    assert final_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25
+
+
+def test_previous_world_and_state_resource_deposits_remain_unchanged() -> None:
+    resource_deposits = (
+        ResourceDeposit(
+            coordinate=Coordinate(0, 0),
+            resource_type=ResourceType.FOOD,
+            quantity=25,
+        ),
+    )
+    state = make_state(
+        tiles=(TerrainType.SOIL,),
+        values=(40,),
+        resource_deposits=resource_deposits,
+    )
+
+    advance_world(state, evaporation_rate=1)
+
+    assert state.world.resource_deposits is resource_deposits
+    assert state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25

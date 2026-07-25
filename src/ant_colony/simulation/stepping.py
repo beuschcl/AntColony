@@ -27,6 +27,7 @@ def advance_world(state: WorldState, evaporation_rate: int = 0) -> WorldState:
         dimensions=state.world.dimensions,
         terrain=state.world.terrain,
         moisture=new_moisture,
+        resource_deposits=state.world.resource_deposits,
     )
 
     return WorldState(

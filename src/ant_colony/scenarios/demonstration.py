@@ -1,7 +1,10 @@
 """Deterministic scenario used to demonstrate the world foundation."""
 
 from ant_colony.domain import (
+    Coordinate,
     MoistureMap,
+    ResourceDeposit,
+    ResourceType,
     TerrainMap,
     TerrainType,
     World,
@@ -61,6 +64,18 @@ def create_demonstration_state() -> WorldState:
         dimensions=dimensions,
         terrain=terrain,
         moisture=moisture,
+        resource_deposits=(
+            ResourceDeposit(
+                coordinate=Coordinate(x=0, y=0),
+                resource_type=ResourceType.FOOD,
+                quantity=25,
+            ),
+            ResourceDeposit(
+                coordinate=Coordinate(x=2, y=2),
+                resource_type=ResourceType.FOOD,
+                quantity=10,
+            ),
+        ),
     )
 
     return WorldState(world=world)

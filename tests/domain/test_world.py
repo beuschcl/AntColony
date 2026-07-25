@@ -2,6 +2,7 @@ import pytest
 
 from ant_colony.domain import (
     Coordinate,
+    MoistureMap,
     TerrainMap,
     TerrainType,
     World,
@@ -15,7 +16,11 @@ def make_world(width: int = 10, height: int = 6) -> World:
         dimensions=dimensions,
         tiles=(TerrainType.SOIL,) * (width * height),
     )
-    return World(dimensions=dimensions, terrain=terrain)
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(50,) * (width * height),
+    )
+    return World(dimensions=dimensions, terrain=terrain, moisture=moisture)
 
 
 def test_world_preserves_its_dimensions_and_terrain() -> None:
@@ -24,11 +29,20 @@ def test_world_preserves_its_dimensions_and_terrain() -> None:
         dimensions=dimensions,
         tiles=(TerrainType.SOIL, TerrainType.WATER),
     )
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(25, 75),
+    )
 
-    world = World(dimensions=dimensions, terrain=terrain)
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+    )
 
     assert world.dimensions is dimensions
     assert world.terrain is terrain
+    assert world.moisture is moisture
 
 
 def test_world_rejects_invalid_dimensions() -> None:
@@ -37,16 +51,32 @@ def test_world_rejects_invalid_dimensions() -> None:
         dimensions=dimensions,
         tiles=(TerrainType.SOIL,),
     )
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(50,),
+    )
 
     with pytest.raises(TypeError, match="dimensions must be WorldDimensions"):
-        World(dimensions=(1, 1), terrain=terrain)  # type: ignore[arg-type]
+        World(
+            dimensions=(1, 1),  # type: ignore[arg-type]
+            terrain=terrain,
+            moisture=moisture,
+        )
 
 
 def test_world_rejects_invalid_terrain() -> None:
     dimensions = WorldDimensions(width=1, height=1)
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(50,),
+    )
 
     with pytest.raises(TypeError, match="terrain must be TerrainMap"):
-        World(dimensions=dimensions, terrain=None)  # type: ignore[arg-type]
+        World(
+            dimensions=dimensions,
+            terrain=None,  # type: ignore[arg-type]
+            moisture=moisture,
+        )
 
 
 def test_world_rejects_terrain_with_different_dimensions() -> None:
@@ -62,6 +92,47 @@ def test_world_rejects_terrain_with_different_dimensions() -> None:
         World(
             dimensions=WorldDimensions(width=1, height=2),
             terrain=terrain,
+            moisture=MoistureMap(
+                dimensions=WorldDimensions(width=1, height=2),
+                values=(50, 75),
+            ),
+        )
+
+
+def test_world_rejects_invalid_moisture() -> None:
+    dimensions = WorldDimensions(width=1, height=1)
+    terrain = TerrainMap(
+        dimensions=dimensions,
+        tiles=(TerrainType.SOIL,),
+    )
+
+    with pytest.raises(TypeError, match="moisture must be MoistureMap"):
+        World(
+            dimensions=dimensions,
+            terrain=terrain,
+            moisture=None,  # type: ignore[arg-type]
+        )
+
+
+def test_world_rejects_moisture_with_different_dimensions() -> None:
+    dimensions = WorldDimensions(width=1, height=2)
+    terrain = TerrainMap(
+        dimensions=dimensions,
+        tiles=(TerrainType.SOIL, TerrainType.MUD),
+    )
+    moisture = MoistureMap(
+        dimensions=WorldDimensions(width=2, height=1),
+        values=(25, 75),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="moisture dimensions must match world dimensions",
+    ):
+        World(
+            dimensions=dimensions,
+            terrain=terrain,
+            moisture=moisture,
         )
 
 
@@ -93,11 +164,41 @@ def test_world_exposes_terrain_by_coordinate() -> None:
             TerrainType.WATER,
         ),
     )
-    world = World(dimensions=dimensions, terrain=terrain)
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=MoistureMap(
+            dimensions=dimensions,
+            values=(10, 20, 30),
+        ),
+    )
 
     assert world.terrain_at(Coordinate(0, 0)) is TerrainType.SOIL
     assert world.terrain_at(Coordinate(1, 0)) is TerrainType.ROCK
     assert world.terrain_at(Coordinate(2, 0)) is TerrainType.WATER
+
+
+def test_world_exposes_moisture_by_coordinate() -> None:
+    dimensions = WorldDimensions(width=3, height=1)
+    world = World(
+        dimensions=dimensions,
+        terrain=TerrainMap(
+            dimensions=dimensions,
+            tiles=(
+                TerrainType.SOIL,
+                TerrainType.ROCK,
+                TerrainType.WATER,
+            ),
+        ),
+        moisture=MoistureMap(
+            dimensions=dimensions,
+            values=(10, 20, 30),
+        ),
+    )
+
+    assert world.moisture_at(Coordinate(0, 0)) == 10
+    assert world.moisture_at(Coordinate(1, 0)) == 20
+    assert world.moisture_at(Coordinate(2, 0)) == 30
 
 
 def test_world_iterates_coordinates_in_row_major_order() -> None:

@@ -1,6 +1,7 @@
 """Deterministic scenario used to demonstrate the world foundation."""
 
 from ant_colony.domain import (
+    MoistureMap,
     TerrainMap,
     TerrainType,
     World,
@@ -33,7 +34,7 @@ def create_demonstration_state() -> WorldState:
             TerrainType.ROCK,
             TerrainType.ROCK,
         ),
-    ),
+    )
 
     moisture = MoistureMap(
         dimensions=dimensions,

@@ -13,6 +13,7 @@ def create_demonstration_state() -> WorldState:
     """Create the initial state for the deterministic demonstration."""
 
     dimensions = WorldDimensions(width=5, height=3)
+
     terrain = TerrainMap(
         dimensions=dimensions,
         tiles=(
@@ -32,7 +33,33 @@ def create_demonstration_state() -> WorldState:
             TerrainType.ROCK,
             TerrainType.ROCK,
         ),
+    ),
+
+    moisture = MoistureMap(
+        dimensions=dimensions,
+        values=(
+            30,
+            15,
+            10,
+            100,
+            100,
+            40,
+            75,
+            80,
+            100,
+            100,
+            35,
+            45,
+            70,
+            20,
+            15,
+        ),
     )
-    world = World(dimensions=dimensions, terrain=terrain)
+
+    world = World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+    )
 
     return WorldState(world=world)

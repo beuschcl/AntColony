@@ -34,7 +34,7 @@ def create_demonstration_state() -> WorldState:
             TerrainType.ROCK,
             TerrainType.ROCK,
         ),
-    ),
+    )
 
     moisture = MoistureMap(
         dimensions=dimensions,

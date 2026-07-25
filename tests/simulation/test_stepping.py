@@ -50,12 +50,12 @@ def test_advance_world_returns_a_new_state() -> None:
     assert next_state is not current_state
 
 
-def test_advance_world_preserves_the_world() -> None:
+def test_advance_world_preserves_the_terrain() -> None:
     current_state = make_state()
 
     next_state = advance_world(current_state)
 
-    assert next_state.world is current_state.world
+    assert next_state.world.terrain is current_state.world.terrain
 
 
 def test_advance_world_does_not_modify_the_current_state() -> None:

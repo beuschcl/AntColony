@@ -3,6 +3,8 @@ import pytest
 from ant_colony.domain import (
     Coordinate,
     MoistureMap,
+    ResourceDeposit,
+    ResourceType,
     TerrainMap,
     TerrainType,
     World,
@@ -10,7 +12,11 @@ from ant_colony.domain import (
 )
 
 
-def make_world(width: int = 10, height: int = 6) -> World:
+def make_world(
+    width: int = 10,
+    height: int = 6,
+    resource_deposits: tuple[ResourceDeposit, ...] = (),
+) -> World:
     dimensions = WorldDimensions(width=width, height=height)
     terrain = TerrainMap(
         dimensions=dimensions,
@@ -20,7 +26,12 @@ def make_world(width: int = 10, height: int = 6) -> World:
         dimensions=dimensions,
         values=(50,) * (width * height),
     )
-    return World(dimensions=dimensions, terrain=terrain, moisture=moisture)
+    return World(
+        dimensions=dimensions,
+        terrain=terrain,
+        moisture=moisture,
+        resource_deposits=resource_deposits,
+    )
 
 
 def test_world_preserves_its_dimensions_and_terrain() -> None:
@@ -212,3 +223,110 @@ def test_world_iterates_coordinates_in_row_major_order() -> None:
         Coordinate(1, 1),
         Coordinate(2, 1),
     ]
+
+
+def test_world_exposes_resource_deposits_by_coordinate() -> None:
+    world = make_world(
+        width=3,
+        height=1,
+        resource_deposits=(
+            ResourceDeposit(
+                coordinate=Coordinate(0, 0),
+                resource_type=ResourceType.FOOD,
+                quantity=25,
+            ),
+        ),
+    )
+
+    deposits = world.resource_deposits_at(Coordinate(0, 0))
+
+    assert deposits == (
+        ResourceDeposit(
+            coordinate=Coordinate(0, 0),
+            resource_type=ResourceType.FOOD,
+            quantity=25,
+        ),
+    )
+    assert isinstance(deposits, tuple)
+
+
+def test_world_returns_resource_quantity_by_coordinate_and_type() -> None:
+    world = make_world(
+        width=2,
+        height=1,
+        resource_deposits=(
+            ResourceDeposit(
+                coordinate=Coordinate(1, 0),
+                resource_type=ResourceType.FOOD,
+                quantity=10,
+            ),
+        ),
+    )
+
+    assert world.resource_quantity_at(Coordinate(1, 0), ResourceType.FOOD) == 10
+
+
+def test_world_returns_zero_when_resource_is_absent() -> None:
+    world = make_world(
+        width=2,
+        height=1,
+        resource_deposits=(
+            ResourceDeposit(
+                coordinate=Coordinate(1, 0),
+                resource_type=ResourceType.FOOD,
+                quantity=10,
+            ),
+        ),
+    )
+
+    assert world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 0
+
+
+def test_world_rejects_non_resource_deposit_entry() -> None:
+    with pytest.raises(TypeError, match="every resource deposit must be ResourceDeposit"):
+        make_world(
+            width=1,
+            height=1,
+            resource_deposits=("not-a-deposit",),  # type: ignore[arg-type]
+        )
+
+
+def test_world_rejects_out_of_bounds_resource_deposit() -> None:
+    with pytest.raises(
+        ValueError,
+        match="resource deposit coordinate must be within world bounds",
+    ):
+        make_world(
+            width=1,
+            height=1,
+            resource_deposits=(
+                ResourceDeposit(
+                    coordinate=Coordinate(1, 0),
+                    resource_type=ResourceType.FOOD,
+                    quantity=1,
+                ),
+            ),
+        )
+
+
+def test_world_rejects_duplicate_resource_deposit_type_at_same_coordinate() -> None:
+    with pytest.raises(
+        ValueError,
+        match="duplicate resource deposit for coordinate and resource type",
+    ):
+        make_world(
+            width=1,
+            height=1,
+            resource_deposits=(
+                ResourceDeposit(
+                    coordinate=Coordinate(0, 0),
+                    resource_type=ResourceType.FOOD,
+                    quantity=1,
+                ),
+                ResourceDeposit(
+                    coordinate=Coordinate(0, 0),
+                    resource_type=ResourceType.FOOD,
+                    quantity=2,
+                ),
+            ),
+        )

@@ -1,5 +1,7 @@
 from ant_colony.domain import (
     Coordinate,
+    ResourceDeposit,
+    ResourceType,
     SimulationTime,
     TerrainType,
 )
@@ -48,3 +50,20 @@ def test_demonstration_scenario_places_mud_explicitly() -> None:
     assert state.world.terrain_at(Coordinate(1, 1)) is TerrainType.MUD
     assert state.world.terrain_at(Coordinate(2, 1)) is TerrainType.MUD
     assert state.world.terrain_at(Coordinate(2, 2)) is TerrainType.MUD
+
+
+def test_demonstration_scenario_contains_explicit_food_deposits() -> None:
+    state = create_demonstration_state()
+
+    assert state.world.resource_deposits == (
+        ResourceDeposit(
+            coordinate=Coordinate(x=0, y=0),
+            resource_type=ResourceType.FOOD,
+            quantity=25,
+        ),
+        ResourceDeposit(
+            coordinate=Coordinate(x=2, y=2),
+            resource_type=ResourceType.FOOD,
+            quantity=10,
+        ),
+    )

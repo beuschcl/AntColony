@@ -1,0 +1,9 @@
+[project]
+name = "ant-colony"
+version = "0.1.0"
+description = "A deterministic ant colony environment simulation"
+readme = "README.md"
+requires-python = ">=3.14"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

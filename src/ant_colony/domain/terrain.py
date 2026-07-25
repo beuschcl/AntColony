@@ -10,6 +10,7 @@ class TerrainType(StrEnum):
     """The physical substrate assigned to a world coordinate."""
 
     SOIL = "soil"
+    MUD = "mud"
     ROCK = "rock"
     WATER = "water"
 

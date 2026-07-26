@@ -24,3 +24,17 @@ Run these commands locally before opening a pull request:
 To apply formatting locally:
 
 - `python -m ruff format .`
+
+## Running the demonstrations
+
+- Text demonstration: `python -m terroir_simulator`
+- Interactive graphical observer: `python -m terroir_simulator.graphical_demo`
+
+### Graphical observer controls
+
+- `Space` advances one simulation step.
+- `P` toggles play and pause.
+- `R` restores the original demonstration state and pauses playback.
+- `M` toggles the moisture overlay.
+- Left click selects a world tile for inspection.
+- `Esc` closes the window.

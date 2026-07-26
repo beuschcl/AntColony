@@ -408,7 +408,9 @@ def test_resource_deposits_are_preserved_after_one_evaporation_step() -> None:
     next_state = advance_world(state, evaporation_rate=4)
 
     assert next_state.world.resource_deposits is resource_deposits
-    assert next_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25
+    assert (
+        next_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25
+    )
 
 
 def test_resource_deposits_remain_unchanged_over_multiple_steps() -> None:
@@ -428,7 +430,10 @@ def test_resource_deposits_remain_unchanged_over_multiple_steps() -> None:
     final_state = run_steps(initial_state, steps=3, evaporation_rate=2)
 
     assert final_state.world.resource_deposits is resource_deposits
-    assert final_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD) == 25
+    assert (
+        final_state.world.resource_quantity_at(Coordinate(0, 0), ResourceType.FOOD)
+        == 25
+    )
 
 
 def test_previous_world_and_state_resource_deposits_remain_unchanged() -> None:

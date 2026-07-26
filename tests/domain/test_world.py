@@ -283,7 +283,9 @@ def test_world_returns_zero_when_resource_is_absent() -> None:
 
 
 def test_world_rejects_non_resource_deposit_entry() -> None:
-    with pytest.raises(TypeError, match="every resource deposit must be ResourceDeposit"):
+    with pytest.raises(
+        TypeError, match="every resource deposit must be ResourceDeposit"
+    ):
         make_world(
             width=1,
             height=1,

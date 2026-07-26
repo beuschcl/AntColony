@@ -36,7 +36,4 @@ class WorldDimensions:
     def contains(self, coordinate: Coordinate) -> bool:
         """Return whether a coordinate lies within these dimensions."""
 
-        return (
-            0 <= coordinate.x < self.width
-            and 0 <= coordinate.y < self.height
-        )
+        return 0 <= coordinate.x < self.width and 0 <= coordinate.y < self.height

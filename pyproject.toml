@@ -9,6 +9,7 @@ requires-python = ">=3.13,<3.14"
 dev = [
     "pytest",
     "ruff==0.16.0",
+    "mypy==1.18.2",
 ]
 
 [tool.pytest.ini_options]
@@ -24,3 +25,11 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.ruff.format]
 line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src/terroir_simulator"]
+strict = true
+pretty = true
+show_error_codes = true
+exclude = "(^build/|^dist/|^\\.venv/|^venv/|^\\.mypy_cache/|^__pycache__/)"

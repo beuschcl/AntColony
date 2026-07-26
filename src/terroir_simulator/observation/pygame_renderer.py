@@ -24,6 +24,7 @@ _PANEL_TEXT = pygame.Color("#ebe2c8")
 _PANEL_DIVIDER = pygame.Color("#4a4435")
 _SELECTION_COLOR = pygame.Color("#f6e37a")
 _MOISTURE_OVERLAY = pygame.Color("#6d9dd8")
+_INSPECTOR_SCROLL_STEP_LINES = 3
 
 _TERRAIN_COLORS: dict[TerrainType, pygame.Color] = {
     TerrainType.SOIL: pygame.Color("#667449"),
@@ -64,6 +65,7 @@ def show_world(state: WorldState) -> None:
         show_moisture_overlay = False
         is_playing = False
         accumulated_playback_ms = 0
+        inspector_scroll_lines = 0
 
         running = True
         while running:
@@ -88,13 +90,41 @@ def show_world(state: WorldState) -> None:
                         current_state = initial_state
                         is_playing = False
                         accumulated_playback_ms = 0
+                        inspector_scroll_lines = 0
                     elif event.key == pygame.K_m:
                         show_moisture_overlay = not show_moisture_overlay
+                    elif event.key == pygame.K_UP:
+                        inspector_scroll_lines = _scroll_inspector(
+                            inspector_scroll_lines,
+                            delta_lines=-_INSPECTOR_SCROLL_STEP_LINES,
+                            total_lines=len(
+                                _inspector_lines(current_state, selected_coordinate)
+                            ),
+                            visible_lines=_inspector_visible_line_capacity(
+                                panel_height=world_display_size[1],
+                                line_height=font.get_linesize(),
+                            ),
+                        )
+                    elif event.key == pygame.K_DOWN:
+                        inspector_scroll_lines = _scroll_inspector(
+                            inspector_scroll_lines,
+                            delta_lines=_INSPECTOR_SCROLL_STEP_LINES,
+                            total_lines=len(
+                                _inspector_lines(current_state, selected_coordinate)
+                            ),
+                            visible_lines=_inspector_visible_line_capacity(
+                                panel_height=world_display_size[1],
+                                line_height=font.get_linesize(),
+                            ),
+                        )
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    selected_coordinate = _coordinate_from_screen_position(
+                    next_selected_coordinate = _coordinate_from_screen_position(
                         event.pos,
                         current_state.world.dimensions,
                     )
+                    if next_selected_coordinate != selected_coordinate:
+                        inspector_scroll_lines = 0
+                    selected_coordinate = next_selected_coordinate
 
             if is_playing:
                 accumulated_playback_ms += elapsed_ms
@@ -115,6 +145,16 @@ def show_world(state: WorldState) -> None:
             window.fill(_PANEL_BACKGROUND)
             enlarged = pygame.transform.scale(canvas, world_display_size)
             window.blit(enlarged, (0, 0))
+            inspector_lines = _inspector_lines(current_state, selected_coordinate)
+            inspector_scroll_lines = _scroll_inspector(
+                inspector_scroll_lines,
+                delta_lines=0,
+                total_lines=len(inspector_lines),
+                visible_lines=_inspector_visible_line_capacity(
+                    panel_height=world_display_size[1],
+                    line_height=font.get_linesize(),
+                ),
+            )
             _draw_inspector_panel(
                 window,
                 pygame.Rect(
@@ -124,8 +164,8 @@ def show_world(state: WorldState) -> None:
                     world_display_size[1],
                 ),
                 font,
-                current_state,
-                selected_coordinate,
+                inspector_lines,
+                scroll_lines=inspector_scroll_lines,
             )
             pygame.display.flip()
     finally:
@@ -251,7 +291,8 @@ def _inspector_lines(
                 f"- {plant.species.common_name}",
                 f"  scientific: {plant.species.scientific_name}",
                 f"  stage: {plant.growth_stage.value}",
-                f"  plant_id: {plant.plant_id.value}",
+                "  plant_id:",
+                f"    {plant.plant_id.value}",
             )
         )
 
@@ -262,19 +303,59 @@ def _draw_inspector_panel(
     surface: pygame.Surface,
     panel: pygame.Rect,
     font: pygame.font.Font,
-    state: WorldState,
-    selected_coordinate: Coordinate | None,
+    inspector_lines: tuple[str, ...],
+    *,
+    scroll_lines: int,
 ) -> None:
     """Draw an inspector panel beside the world view."""
 
     pygame.draw.rect(surface, _PANEL_BACKGROUND, panel)
     pygame.draw.line(surface, _PANEL_DIVIDER, panel.topleft, panel.bottomleft, 2)
 
-    y = panel.top + _PANEL_MARGIN
-    for line in _inspector_lines(state, selected_coordinate):
+    previous_clip = surface.get_clip()
+    content_rect = pygame.Rect(
+        panel.left + _PANEL_MARGIN,
+        panel.top + _PANEL_MARGIN,
+        panel.width - (2 * _PANEL_MARGIN),
+        panel.height - (2 * _PANEL_MARGIN),
+    )
+    surface.set_clip(content_rect)
+
+    y = panel.top + _PANEL_MARGIN - (scroll_lines * font.get_linesize())
+    for line in inspector_lines:
         label = font.render(line, True, _PANEL_TEXT)
         surface.blit(label, (panel.left + _PANEL_MARGIN, y))
         y += font.get_linesize()
+
+    surface.set_clip(previous_clip)
+
+
+def _inspector_visible_line_capacity(panel_height: int, line_height: int) -> int:
+    """Return how many text rows fit in the inspector panel."""
+
+    visible_height = panel_height - (2 * _PANEL_MARGIN)
+    if visible_height <= 0 or line_height <= 0:
+        return 1
+
+    return max(1, visible_height // line_height)
+
+
+def _scroll_inspector(
+    scroll_lines: int,
+    *,
+    delta_lines: int,
+    total_lines: int,
+    visible_lines: int,
+) -> int:
+    """Return a bounded vertical inspector scroll offset in text rows."""
+
+    maximum_scroll = max(0, total_lines - visible_lines)
+    next_scroll = scroll_lines + delta_lines
+    if next_scroll < 0:
+        return 0
+    if next_scroll > maximum_scroll:
+        return maximum_scroll
+    return next_scroll
 
 
 def _draw_selection_outline(canvas: pygame.Surface, tile: pygame.Rect) -> None:

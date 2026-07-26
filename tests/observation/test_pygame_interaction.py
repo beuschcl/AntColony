@@ -23,6 +23,8 @@ from terroir_simulator.observation.pygame_renderer import (
     _draw_moisture_overlay,
     _draw_selection_outline,
     _inspector_lines,
+    _inspector_visible_line_capacity,
+    _scroll_inspector,
 )
 
 
@@ -109,11 +111,47 @@ def test_inspector_lines_include_selected_tile_details_and_plant_ids() -> None:
         "- Alpha plant",
         "  scientific: Alpha botanica",
         "  stage: emerging",
-        "  plant_id: 00000000-0000-0000-0000-000000000001",
+        "  plant_id:",
+        "    00000000-0000-0000-0000-000000000001",
         "- Beta plant",
         "  scientific: Beta botanica",
         "  stage: flowering",
-        "  plant_id: 00000000-0000-0000-0000-000000000002",
+        "  plant_id:",
+        "    00000000-0000-0000-0000-000000000002",
+    )
+
+
+def test_inspector_visible_line_capacity_uses_panel_height_and_margin() -> None:
+    assert _inspector_visible_line_capacity(panel_height=144, line_height=16) == 7
+
+
+def test_scroll_inspector_is_bounded_to_available_content() -> None:
+    assert (
+        _scroll_inspector(
+            0,
+            delta_lines=3,
+            total_lines=18,
+            visible_lines=7,
+        )
+        == 3
+    )
+    assert (
+        _scroll_inspector(
+            10,
+            delta_lines=3,
+            total_lines=18,
+            visible_lines=7,
+        )
+        == 11
+    )
+    assert (
+        _scroll_inspector(
+            2,
+            delta_lines=-5,
+            total_lines=18,
+            visible_lines=7,
+        )
+        == 0
     )
 
 

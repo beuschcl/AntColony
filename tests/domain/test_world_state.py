@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from ant_colony.domain import (
+from terroir_simulator.domain import (
     MoistureMap,
     SimulationTime,
     TerrainMap,

@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from ant_colony.domain import Coordinate, ResourceDeposit, ResourceType
+from terroir_simulator.domain import Coordinate, ResourceDeposit, ResourceType
 
 
 def test_resource_type_includes_food() -> None:

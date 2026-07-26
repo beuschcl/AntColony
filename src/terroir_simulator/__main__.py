@@ -1,8 +1,8 @@
-"""Run the deterministic Ant Colony world demonstration."""
+"""Run the deterministic Terroir Simulator world demonstration."""
 
-from ant_colony.observation import render_world
-from ant_colony.scenarios import create_demonstration_state
-from ant_colony.simulation import run_steps
+from terroir_simulator.observation import render_world
+from terroir_simulator.scenarios import create_demonstration_state
+from terroir_simulator.simulation import run_steps
 
 
 def main() -> None:

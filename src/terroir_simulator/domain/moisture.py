@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from ant_colony.domain.spatial import Coordinate, WorldDimensions
+from terroir_simulator.domain.spatial import Coordinate, WorldDimensions
 
 
 @dataclass(frozen=True, slots=True)

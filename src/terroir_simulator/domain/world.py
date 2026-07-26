@@ -2,10 +2,10 @@
 
 from dataclasses import dataclass, field
 
-from ant_colony.domain.moisture import MoistureMap
-from ant_colony.domain.resource import ResourceDeposit, ResourceType
-from ant_colony.domain.spatial import Coordinate, WorldDimensions
-from ant_colony.domain.terrain import TerrainMap, TerrainType
+from terroir_simulator.domain.moisture import MoistureMap
+from terroir_simulator.domain.resource import ResourceDeposit, ResourceType
+from terroir_simulator.domain.spatial import Coordinate, WorldDimensions
+from terroir_simulator.domain.terrain import TerrainMap, TerrainType
 
 
 @dataclass(frozen=True, slots=True)

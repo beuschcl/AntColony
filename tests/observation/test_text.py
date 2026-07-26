@@ -1,6 +1,6 @@
 import pytest
 
-from ant_colony.domain import (
+from terroir_simulator.domain import (
     Coordinate,
     MoistureMap,
     ResourceDeposit,
@@ -12,7 +12,7 @@ from ant_colony.domain import (
     WorldDimensions,
     WorldState,
 )
-from ant_colony.observation import render_world
+from terroir_simulator.observation import render_world
 
 
 def make_state(step: int = 0) -> WorldState:
@@ -254,7 +254,7 @@ def test_render_world_displays_food_in_row_major_order() -> None:
 
 
 def test_render_world_food_is_static_across_steps() -> None:
-    from ant_colony.simulation import run_steps
+    from terroir_simulator.simulation import run_steps
 
     state_before = make_state(step=0)
     state_after = run_steps(state_before, steps=3, evaporation_rate=1)

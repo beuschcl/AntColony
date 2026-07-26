@@ -267,7 +267,7 @@ def test_register_plant_makes_it_retrievable_by_id() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(1, 1))
+    world = world.register_plant(plant, Coordinate(1, 1))
 
     assert world.plant(plant.plant_id) is plant
 
@@ -277,9 +277,27 @@ def test_register_plant_stores_its_location() -> None:
     plant = make_plant()
     coord = Coordinate(2, 3)
 
-    world.register_plant(plant, coord)
+    world = world.register_plant(plant, coord)
 
     assert world.location_of(plant.plant_id) == coord
+
+
+def test_register_plant_returns_a_new_world() -> None:
+    original = make_world()
+    plant = make_plant()
+
+    updated = original.register_plant(plant, Coordinate(0, 0))
+
+    assert updated is not original
+
+
+def test_register_plant_leaves_original_world_unchanged() -> None:
+    original = make_world()
+    plant = make_plant()
+
+    original.register_plant(plant, Coordinate(0, 0))
+
+    assert original.all_plants() == ()
 
 
 def test_register_plant_rejects_out_of_bounds_coordinate() -> None:
@@ -294,7 +312,7 @@ def test_register_plant_rejects_duplicate_plant_id() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
+    world = world.register_plant(plant, Coordinate(0, 0))
 
     with pytest.raises(ValueError, match="plant is already registered"):
         world.register_plant(plant, Coordinate(1, 1))
@@ -315,6 +333,27 @@ def test_location_of_raises_key_error_for_unknown_id() -> None:
 
 
 # ---------------------------------------------------------------------------
+# World — snapshot semantics
+# ---------------------------------------------------------------------------
+
+
+def test_world_with_different_plants_are_not_equal() -> None:
+    base = make_world()
+    plant = make_plant()
+
+    world_with = base.register_plant(plant, Coordinate(0, 0))
+
+    assert base != world_with
+
+
+def test_world_is_immutable() -> None:
+    world = make_world()
+
+    with pytest.raises(FrozenInstanceError):
+        world.dimensions = WorldDimensions(width=1, height=1)  # type: ignore[misc]
+
+
+# ---------------------------------------------------------------------------
 # World — lookup by coordinate
 # ---------------------------------------------------------------------------
 
@@ -324,7 +363,7 @@ def test_plants_at_returns_plant_at_coordinate() -> None:
     plant = make_plant()
     coord = Coordinate(0, 0)
 
-    world.register_plant(plant, coord)
+    world = world.register_plant(plant, coord)
 
     result = world.plants_at(coord)
     assert result == (plant,)
@@ -362,8 +401,8 @@ def test_plants_at_returns_all_plants_at_shared_coordinate() -> None:
     plant_b = make_plant()
     coord = Coordinate(0, 0)
 
-    world.register_plant(plant_a, coord)
-    world.register_plant(plant_b, coord)
+    world = world.register_plant(plant_a, coord)
+    world = world.register_plant(plant_b, coord)
 
     result = world.plants_at(coord)
     assert len(result) == 2
@@ -377,7 +416,7 @@ def test_plants_at_shared_coordinate_is_deterministically_ordered() -> None:
 
     plants = [make_plant() for _ in range(4)]
     for p in plants:
-        world.register_plant(p, coord)
+        world = world.register_plant(p, coord)
 
     result_a = world.plants_at(coord)
     result_b = world.plants_at(coord)
@@ -394,7 +433,7 @@ def test_all_plants_includes_registered_plant() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
+    world = world.register_plant(plant, Coordinate(0, 0))
 
     assert plant in world.all_plants()
 
@@ -403,7 +442,7 @@ def test_active_plants_includes_placed_plant() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
+    world = world.register_plant(plant, Coordinate(0, 0))
 
     assert plant in world.active_plants()
 
@@ -429,8 +468,8 @@ def test_remove_plant_from_world_keeps_plant_in_registry() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
-    world.remove_plant_from_world(plant.plant_id)
+    world = world.register_plant(plant, Coordinate(0, 0))
+    world = world.remove_plant_from_world(plant.plant_id)
 
     assert world.plant(plant.plant_id) is plant
     assert plant in world.all_plants()
@@ -440,10 +479,30 @@ def test_remove_plant_from_world_removes_from_active_plants() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
-    world.remove_plant_from_world(plant.plant_id)
+    world = world.register_plant(plant, Coordinate(0, 0))
+    world = world.remove_plant_from_world(plant.plant_id)
 
     assert plant not in world.active_plants()
+
+
+def test_remove_plant_from_world_returns_a_new_world() -> None:
+    world = make_world()
+    plant = make_plant()
+
+    world_with = world.register_plant(plant, Coordinate(0, 0))
+    world_without = world_with.remove_plant_from_world(plant.plant_id)
+
+    assert world_without is not world_with
+
+
+def test_remove_plant_from_world_leaves_prior_world_unchanged() -> None:
+    world = make_world()
+    plant = make_plant()
+
+    world_with = world.register_plant(plant, Coordinate(0, 0))
+    world_with.remove_plant_from_world(plant.plant_id)
+
+    assert plant in world_with.active_plants()
 
 
 def test_remove_plant_from_world_raises_for_unknown_id() -> None:
@@ -457,8 +516,8 @@ def test_remove_plant_from_world_raises_when_already_removed() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(0, 0))
-    world.remove_plant_from_world(plant.plant_id)
+    world = world.register_plant(plant, Coordinate(0, 0))
+    world = world.remove_plant_from_world(plant.plant_id)
 
     with pytest.raises(ValueError, match="plant is not currently placed in the world"):
         world.remove_plant_from_world(plant.plant_id)
@@ -468,8 +527,8 @@ def test_location_of_raises_after_removal() -> None:
     world = make_world()
     plant = make_plant()
 
-    world.register_plant(plant, Coordinate(1, 2))
-    world.remove_plant_from_world(plant.plant_id)
+    world = world.register_plant(plant, Coordinate(1, 2))
+    world = world.remove_plant_from_world(plant.plant_id)
 
     with pytest.raises(KeyError):
         world.location_of(plant.plant_id)
@@ -489,7 +548,7 @@ def test_dead_plant_remains_registered_after_stage_does_not_change_placement() -
     )
     coord = Coordinate(0, 0)
 
-    world.register_plant(plant, coord)
+    world = world.register_plant(plant, coord)
 
     assert world.plant(plant.plant_id) is plant
     assert world.location_of(plant.plant_id) == coord
@@ -508,8 +567,8 @@ def test_plants_at_is_empty_after_sole_plant_removed() -> None:
     plant = make_plant()
     coord = Coordinate(0, 0)
 
-    world.register_plant(plant, coord)
-    world.remove_plant_from_world(plant.plant_id)
+    world = world.register_plant(plant, coord)
+    world = world.remove_plant_from_world(plant.plant_id)
 
     assert world.plants_at(coord) == ()
 
@@ -520,9 +579,9 @@ def test_plants_at_retains_other_plants_after_one_is_removed() -> None:
     plant_b = make_plant()
     coord = Coordinate(0, 0)
 
-    world.register_plant(plant_a, coord)
-    world.register_plant(plant_b, coord)
-    world.remove_plant_from_world(plant_a.plant_id)
+    world = world.register_plant(plant_a, coord)
+    world = world.register_plant(plant_b, coord)
+    world = world.remove_plant_from_world(plant_a.plant_id)
 
     result = world.plants_at(coord)
     assert result == (plant_b,)
@@ -533,9 +592,9 @@ def test_all_plants_includes_both_active_and_removed_plants() -> None:
     active_plant = make_plant()
     removed_plant = make_plant()
 
-    world.register_plant(active_plant, Coordinate(0, 0))
-    world.register_plant(removed_plant, Coordinate(1, 0))
-    world.remove_plant_from_world(removed_plant.plant_id)
+    world = world.register_plant(active_plant, Coordinate(0, 0))
+    world = world.register_plant(removed_plant, Coordinate(1, 0))
+    world = world.remove_plant_from_world(removed_plant.plant_id)
 
     all_plants = world.all_plants()
     assert active_plant in all_plants

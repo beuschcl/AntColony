@@ -10,33 +10,32 @@ from terroir_simulator.domain.spatial import Coordinate, WorldDimensions
 from terroir_simulator.domain.terrain import TerrainMap, TerrainType
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class World:
-    """A mutable collection of dimension-matched world layers with a plant registry."""
+    """An immutable snapshot of dimension-matched world layers and plant state.
+
+    Plant state is stored as frozen sets so that every ``World`` value is a
+    true immutable snapshot.  Mutating plant registration or placement returns
+    a new ``World`` rather than modifying the existing one.
+    """
 
     dimensions: WorldDimensions
     terrain: TerrainMap
     moisture: MoistureMap
     resource_deposits: tuple[ResourceDeposit, ...] = field(default_factory=tuple)
 
-    # Plant registries — maintained internally; never expose raw references.
-    _plant_registry: dict[PlantId, Plant] = field(
-        init=False,
+    # Immutable plant state.  Both fields participate in equality so that two
+    # World values with different plant states are never considered equal.
+    # frozenset gives order-independent set equality, which is the correct
+    # semantic: the same set of plants is the same state regardless of
+    # registration order.
+    _plant_registry: frozenset[tuple[PlantId, Plant]] = field(
+        default=frozenset(),
         repr=False,
-        compare=False,
-        default_factory=dict,
     )
-    _plant_locations: dict[PlantId, Coordinate] = field(
-        init=False,
+    _plant_locations: frozenset[tuple[PlantId, Coordinate]] = field(
+        default=frozenset(),
         repr=False,
-        compare=False,
-        default_factory=dict,
-    )
-    _coordinate_index: dict[Coordinate, set[PlantId]] = field(
-        init=False,
-        repr=False,
-        compare=False,
-        default_factory=dict,
     )
 
     def __post_init__(self) -> None:
@@ -133,11 +132,11 @@ class World:
                 yield Coordinate(x=x, y=y)
 
     # ------------------------------------------------------------------
-    # Plant registry
+    # Plant registry — copy-on-write operations
     # ------------------------------------------------------------------
 
-    def register_plant(self, plant: Plant, coordinate: Coordinate) -> None:
-        """Register a plant at a coordinate and add it to all indexes.
+    def register_plant(self, plant: Plant, coordinate: Coordinate) -> "World":
+        """Return a new World with the plant registered at the coordinate.
 
         Raises TypeError for wrong argument types.
         Raises ValueError if the coordinate is outside the world bounds or the
@@ -153,12 +152,18 @@ class World:
         if not self.contains(coordinate):
             raise ValueError("coordinate must be within world bounds")
 
-        if plant.plant_id in self._plant_registry:
+        registry_ids = {pid for pid, _ in self._plant_registry}
+        if plant.plant_id in registry_ids:
             raise ValueError("plant is already registered")
 
-        self._plant_registry[plant.plant_id] = plant
-        self._plant_locations[plant.plant_id] = coordinate
-        self._coordinate_index.setdefault(coordinate, set()).add(plant.plant_id)
+        return World(
+            dimensions=self.dimensions,
+            terrain=self.terrain,
+            moisture=self.moisture,
+            resource_deposits=self.resource_deposits,
+            _plant_registry=self._plant_registry | {(plant.plant_id, plant)},
+            _plant_locations=self._plant_locations | {(plant.plant_id, coordinate)},
+        )
 
     def plant(self, plant_id: PlantId) -> Plant:
         """Return the registered plant for plant_id.
@@ -170,7 +175,11 @@ class World:
         if not isinstance(plant_id, PlantId):
             raise TypeError("plant_id must be PlantId")
 
-        return self._plant_registry[plant_id]
+        for pid, p in self._plant_registry:
+            if pid == plant_id:
+                return p
+
+        raise KeyError(plant_id)
 
     def location_of(self, plant_id: PlantId) -> Coordinate:
         """Return the current coordinate of an active plant.
@@ -182,7 +191,11 @@ class World:
         if not isinstance(plant_id, PlantId):
             raise TypeError("plant_id must be PlantId")
 
-        return self._plant_locations[plant_id]
+        for pid, coord in self._plant_locations:
+            if pid == plant_id:
+                return coord
+
+        raise KeyError(plant_id)
 
     def plants_at(self, coordinate: Coordinate) -> tuple[Plant, ...]:
         """Return all currently placed plants at a coordinate.
@@ -198,10 +211,13 @@ class World:
         if not self.contains(coordinate):
             raise ValueError("coordinate must be within world bounds")
 
-        plant_ids = self._coordinate_index.get(coordinate, set())
+        registry: dict[PlantId, Plant] = dict(self._plant_registry)
+        placed_ids = {
+            pid for pid, coord in self._plant_locations if coord == coordinate
+        }
         return tuple(
             sorted(
-                (self._plant_registry[pid] for pid in plant_ids),
+                (registry[pid] for pid in placed_ids),
                 key=lambda p: p.plant_id.value,
             )
         )
@@ -209,9 +225,11 @@ class World:
     def active_plants(self) -> tuple[Plant, ...]:
         """Return all currently placed plants in deterministic order."""
 
+        registry: dict[PlantId, Plant] = dict(self._plant_registry)
+        active_ids = {pid for pid, _ in self._plant_locations}
         return tuple(
             sorted(
-                (self._plant_registry[pid] for pid in self._plant_locations),
+                (registry[pid] for pid in active_ids),
                 key=lambda p: p.plant_id.value,
             )
         )
@@ -221,16 +239,16 @@ class World:
 
         return tuple(
             sorted(
-                self._plant_registry.values(),
+                (p for _, p in self._plant_registry),
                 key=lambda p: p.plant_id.value,
             )
         )
 
-    def remove_plant_from_world(self, plant_id: PlantId) -> None:
-        """Remove a plant's current placement without deleting its record.
+    def remove_plant_from_world(self, plant_id: PlantId) -> "World":
+        """Return a new World with the plant's placement removed.
 
-        The plant remains in the permanent registry and can still be retrieved
-        via plant() and all_plants().
+        The plant remains in the permanent registry of the returned world and
+        can still be retrieved via plant() and all_plants().
 
         Raises TypeError for a wrong argument type.
         Raises KeyError if plant_id is not registered.
@@ -240,13 +258,23 @@ class World:
         if not isinstance(plant_id, PlantId):
             raise TypeError("plant_id must be PlantId")
 
-        if plant_id not in self._plant_registry:
+        registry_ids = {pid for pid, _ in self._plant_registry}
+        if plant_id not in registry_ids:
             raise KeyError(plant_id)
 
-        if plant_id not in self._plant_locations:
+        location_ids = {pid for pid, _ in self._plant_locations}
+        if plant_id not in location_ids:
             raise ValueError("plant is not currently placed in the world")
 
-        coordinate = self._plant_locations.pop(plant_id)
-        self._coordinate_index[coordinate].discard(plant_id)
-        if not self._coordinate_index[coordinate]:
-            del self._coordinate_index[coordinate]
+        new_locations = frozenset(
+            (pid, coord) for pid, coord in self._plant_locations if pid != plant_id
+        )
+
+        return World(
+            dimensions=self.dimensions,
+            terrain=self.terrain,
+            moisture=self.moisture,
+            resource_deposits=self.resource_deposits,
+            _plant_registry=self._plant_registry,
+            _plant_locations=new_locations,
+        )

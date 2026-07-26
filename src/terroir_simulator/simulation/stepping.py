@@ -28,6 +28,8 @@ def advance_world(state: WorldState, evaporation_rate: int = 0) -> WorldState:
         terrain=state.world.terrain,
         moisture=new_moisture,
         resource_deposits=state.world.resource_deposits,
+        _plant_registry=state.world._plant_registry,
+        _plant_locations=state.world._plant_locations,
     )
 
     return WorldState(

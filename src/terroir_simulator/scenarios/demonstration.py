@@ -1,8 +1,14 @@
 """Deterministic scenario used to demonstrate the world foundation."""
+
 import uuid
+
 from terroir_simulator.domain import (
     Coordinate,
     MoistureMap,
+    Plant,
+    PlantGrowthStage,
+    PlantId,
+    PlantSpecies,
     ResourceDeposit,
     ResourceType,
     TerrainMap,
@@ -10,10 +16,6 @@ from terroir_simulator.domain import (
     World,
     WorldDimensions,
     WorldState,
-    Plant,
-    PlantGrowthStage,
-    PlantId,
-    PlantSpecies,
 )
 
 
@@ -83,9 +85,7 @@ def create_demonstration_state() -> WorldState:
     )
 
     sedge = Plant(
-        plant_id=PlantId(
-            value=uuid.UUID("00000000-0000-0000-0000-000000000001")
-        ),
+        plant_id=PlantId(value=uuid.UUID("00000000-0000-0000-0000-000000000001")),
         species=PlantSpecies(
             species_id="flora.pennsylvania_sedge",
             common_name="Pennsylvania sedge",
@@ -95,9 +95,7 @@ def create_demonstration_state() -> WorldState:
     )
 
     bellwort = Plant(
-        plant_id=PlantId(
-            value=uuid.UUID("00000000-0000-0000-0000-000000000002")
-        ),
+        plant_id=PlantId(value=uuid.UUID("00000000-0000-0000-0000-000000000002")),
         species=PlantSpecies(
             species_id="flora.large_flowered_bellwort",
             common_name="Large-flowered bellwort",

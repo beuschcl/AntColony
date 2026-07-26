@@ -32,9 +32,7 @@ class TerrainMap:
         expected_tile_count = self.dimensions.width * self.dimensions.height
 
         if len(self.tiles) != expected_tile_count:
-            raise ValueError(
-                f"terrain requires exactly {expected_tile_count} tiles"
-            )
+            raise ValueError(f"terrain requires exactly {expected_tile_count} tiles")
 
         if any(not isinstance(tile, TerrainType) for tile in self.tiles):
             raise TypeError("every tile must be TerrainType")

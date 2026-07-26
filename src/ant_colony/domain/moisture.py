@@ -22,9 +22,7 @@ class MoistureMap:
         expected_count = self.dimensions.width * self.dimensions.height
 
         if len(self.values) != expected_count:
-            raise ValueError(
-                "moisture value count must match dimensions"
-            )
+            raise ValueError("moisture value count must match dimensions")
 
         if any(
             isinstance(value, bool)
@@ -32,9 +30,7 @@ class MoistureMap:
             or not 0 <= value <= 100
             for value in self.values
         ):
-            raise ValueError(
-                "moisture values must be integers from 0 to 100"
-            )
+            raise ValueError("moisture values must be integers from 0 to 100")
 
     def moisture_at(self, coordinate: Coordinate) -> int:
         """Return the moisture percentage at a coordinate."""
@@ -48,8 +44,5 @@ class MoistureMap:
         ):
             raise ValueError("coordinate must be within moisture map bounds")
 
-        index = (
-            coordinate.y * self.dimensions.width
-            + coordinate.x
-        )
+        index = coordinate.y * self.dimensions.width + coordinate.x
         return self.values[index]

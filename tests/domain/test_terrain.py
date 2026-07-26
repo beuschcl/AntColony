@@ -102,6 +102,7 @@ def test_terrain_map_rejects_out_of_bounds_coordinates(
     ):
         terrain.terrain_at(coordinate)
 
+
 def test_mud_is_a_supported_terrain_type() -> None:
     terrain = TerrainMap(
         dimensions=WorldDimensions(width=1, height=1),

@@ -143,4 +143,4 @@ def test_moisture_map_is_immutable() -> None:
     )
 
     with pytest.raises(FrozenInstanceError):
-        setattr(moisture, "values", (75,))
+        moisture.values = (75,)

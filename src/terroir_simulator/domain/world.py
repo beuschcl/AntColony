@@ -75,6 +75,56 @@ class World:
                 )
             seen_deposit_locations.add(deposit_location)
 
+        if not isinstance(self._plant_registry, frozenset):
+            raise TypeError("_plant_registry must be frozenset")
+
+        seen_registry_ids: set[PlantId] = set()
+
+        for registry_entry in self._plant_registry:
+            if (
+                not isinstance(registry_entry, tuple)
+                or len(registry_entry) != 2
+                or not isinstance(registry_entry[0], PlantId)
+                or not isinstance(registry_entry[1], Plant)
+            ):
+                raise TypeError(
+                    "each _plant_registry entry must be a (PlantId, Plant) tuple"
+                )
+            registry_key, registry_plant = registry_entry
+            if registry_key != registry_plant.plant_id:
+                raise ValueError("registry key must match plant.plant_id")
+            if registry_key in seen_registry_ids:
+                raise ValueError("duplicate PlantId in _plant_registry")
+            seen_registry_ids.add(registry_key)
+
+        if not isinstance(self._plant_locations, frozenset):
+            raise TypeError("_plant_locations must be frozenset")
+
+        seen_location_ids: set[PlantId] = set()
+
+        for location_entry in self._plant_locations:
+            if (
+                not isinstance(location_entry, tuple)
+                or len(location_entry) != 2
+                or not isinstance(location_entry[0], PlantId)
+                or not isinstance(location_entry[1], Coordinate)
+            ):
+                raise TypeError(
+                    "each _plant_locations entry must be a (PlantId, Coordinate) tuple"
+                )
+            location_id, location_coord = location_entry
+            if location_id not in seen_registry_ids:
+                raise ValueError(
+                    "location PlantId must be registered in _plant_registry"
+                )
+            if location_id in seen_location_ids:
+                raise ValueError("duplicate PlantId in _plant_locations")
+            seen_location_ids.add(location_id)
+            if not self.contains(location_coord):
+                raise ValueError(
+                    "plant location coordinate must be within world bounds"
+                )
+
     def terrain_at(self, coordinate: Coordinate) -> TerrainType:
         """Return the terrain at a world coordinate."""
 
@@ -130,6 +180,26 @@ class World:
         for y in range(self.dimensions.height):
             for x in range(self.dimensions.width):
                 yield Coordinate(x=x, y=y)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _replace_moisture(self, moisture: MoistureMap) -> "World":
+        """Return a new World identical to this one except for the moisture map.
+
+        Intended for use by simulation stepping code that updates moisture
+        while carrying all plant state forward unchanged.
+        """
+
+        return World(
+            dimensions=self.dimensions,
+            terrain=self.terrain,
+            moisture=moisture,
+            resource_deposits=self.resource_deposits,
+            _plant_registry=self._plant_registry,
+            _plant_locations=self._plant_locations,
+        )
 
     # ------------------------------------------------------------------
     # Plant registry — copy-on-write operations

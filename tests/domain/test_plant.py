@@ -600,3 +600,141 @@ def test_all_plants_includes_both_active_and_removed_plants() -> None:
     assert active_plant in all_plants
     assert removed_plant in all_plants
     assert len(all_plants) == 2
+
+
+# ---------------------------------------------------------------------------
+# World — constructor plant state validation
+# ---------------------------------------------------------------------------
+
+
+def _base_world_kwargs() -> dict:
+    """Return keyword arguments for a minimal valid World constructor call."""
+    dimensions = WorldDimensions(width=3, height=3)
+    return {
+        "dimensions": dimensions,
+        "terrain": TerrainMap(
+            dimensions=dimensions,
+            tiles=(TerrainType.SOIL,) * 9,
+        ),
+        "moisture": MoistureMap(
+            dimensions=dimensions,
+            values=(50,) * 9,
+        ),
+    }
+
+
+def test_world_rejects_non_frozenset_plant_registry() -> None:
+    kwargs = _base_world_kwargs()
+    with pytest.raises(TypeError, match="_plant_registry must be frozenset"):
+        World(**kwargs, _plant_registry=[], _plant_locations=frozenset())  # type: ignore[arg-type]
+
+
+def test_world_rejects_non_frozenset_plant_locations() -> None:
+    kwargs = _base_world_kwargs()
+    with pytest.raises(TypeError, match="_plant_locations must be frozenset"):
+        World(**kwargs, _plant_registry=frozenset(), _plant_locations=[])  # type: ignore[arg-type]
+
+
+def test_world_rejects_registry_entry_of_wrong_type() -> None:
+    kwargs = _base_world_kwargs()
+    with pytest.raises(
+        TypeError,
+        match=r"each _plant_registry entry must be a \(PlantId, Plant\) tuple",
+    ):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({"not-a-tuple"}),  # type: ignore[arg-type]
+            _plant_locations=frozenset(),
+        )
+
+
+def test_world_rejects_location_entry_of_wrong_type() -> None:
+    plant = make_plant()
+    kwargs = _base_world_kwargs()
+    with pytest.raises(
+        TypeError,
+        match=r"each _plant_locations entry must be a \(PlantId, Coordinate\) tuple",
+    ):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({(plant.plant_id, plant)}),
+            _plant_locations=frozenset({"not-a-tuple"}),  # type: ignore[arg-type]
+        )
+
+
+def test_world_rejects_registry_entry_with_mismatched_key() -> None:
+    plant_a = make_plant()
+    plant_b = make_plant()
+    kwargs = _base_world_kwargs()
+    # Registry key is plant_a.plant_id but the Plant is plant_b (different plant_id).
+    with pytest.raises(ValueError, match=r"registry key must match plant\.plant_id"):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({(plant_a.plant_id, plant_b)}),
+            _plant_locations=frozenset(),
+        )
+
+
+def test_world_rejects_duplicate_plant_id_in_registry() -> None:
+    plant_a = make_plant()
+    plant_b = Plant(
+        plant_id=plant_a.plant_id,
+        species=make_species("pine"),
+        growth_stage=PlantGrowthStage.DORMANT,
+    )
+    kwargs = _base_world_kwargs()
+    # Two different Plant objects that share the same PlantId.
+    with pytest.raises(ValueError, match="duplicate PlantId in _plant_registry"):
+        World(
+            **kwargs,
+            _plant_registry=frozenset(
+                {(plant_a.plant_id, plant_a), (plant_b.plant_id, plant_b)}
+            ),
+            _plant_locations=frozenset(),
+        )
+
+
+def test_world_rejects_location_referencing_unregistered_plant_id() -> None:
+    plant = make_plant()
+    unregistered_id = PlantId.generate()
+    kwargs = _base_world_kwargs()
+    with pytest.raises(
+        ValueError,
+        match="location PlantId must be registered in _plant_registry",
+    ):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({(plant.plant_id, plant)}),
+            _plant_locations=frozenset({(unregistered_id, Coordinate(0, 0))}),
+        )
+
+
+def test_world_rejects_duplicate_plant_id_in_locations() -> None:
+    plant = make_plant()
+    kwargs = _base_world_kwargs()
+    # Providing two location tuples with the same PlantId but different coordinates
+    # requires two distinct tuple objects; frozenset de-duplication only removes
+    # identical tuples, so we embed them in a list first.
+    entry_a = (plant.plant_id, Coordinate(0, 0))
+    entry_b = (plant.plant_id, Coordinate(1, 0))
+    with pytest.raises(ValueError, match="duplicate PlantId in _plant_locations"):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({(plant.plant_id, plant)}),
+            _plant_locations=frozenset({entry_a, entry_b}),
+        )
+
+
+def test_world_rejects_plant_location_outside_world_bounds() -> None:
+    plant = make_plant()
+    kwargs = _base_world_kwargs()
+    # World is 3x3; Coordinate(10, 10) is outside.
+    with pytest.raises(
+        ValueError,
+        match="plant location coordinate must be within world bounds",
+    ):
+        World(
+            **kwargs,
+            _plant_registry=frozenset({(plant.plant_id, plant)}),
+            _plant_locations=frozenset({(plant.plant_id, Coordinate(10, 10))}),
+        )

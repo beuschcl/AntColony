@@ -12,7 +12,7 @@ def evaporate_moisture(world: World, evaporation_rate: int) -> MoistureMap:
     starting state so coordinate processing order cannot affect the outcome.
     """
 
-    new_values = []
+    new_values: list[int] = []
 
     for coordinate in world.iter_coordinates():
         if world.terrain_at(coordinate) is TerrainType.WATER:

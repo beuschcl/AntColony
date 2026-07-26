@@ -1,5 +1,6 @@
 """The simulated world's spatial foundation."""
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 from terroir_simulator.domain.moisture import MoistureMap
@@ -103,7 +104,7 @@ class World:
 
         return self.dimensions.contains(coordinate)
 
-    def iter_coordinates(self):
+    def iter_coordinates(self) -> Iterator[Coordinate]:
         """Return coordinates in deterministic row-major order."""
 
         for y in range(self.dimensions.height):

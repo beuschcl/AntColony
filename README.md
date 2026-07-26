@@ -17,6 +17,7 @@ Run these commands locally before opening a pull request:
 
 - `python -m ruff format --check .`
 - `python -m ruff check .`
+- `python -m mypy`
 - `python -m pytest`
 - `python -m terroir_simulator`
 

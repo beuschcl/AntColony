@@ -1,11 +1,11 @@
-from ant_colony.domain import (
+from terroir_simulator.domain import (
     Coordinate,
     ResourceDeposit,
     ResourceType,
     SimulationTime,
     TerrainType,
 )
-from ant_colony.scenarios import create_demonstration_state
+from terroir_simulator.scenarios import create_demonstration_state
 
 
 def test_demonstration_scenario_begins_at_step_zero() -> None:

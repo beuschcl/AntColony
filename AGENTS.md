@@ -1,4 +1,4 @@
-# Ant Colony Agent Instructions
+# Terroir Simulator Agent Instructions
 
 ## Required reading
 

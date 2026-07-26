@@ -1,4 +1,4 @@
-# Ant Colony Architecture
+# Terroir Simulator Architecture
 
 ## Purpose
 
@@ -118,7 +118,7 @@ Serialization and storage formats must not become part of the core domain model.
 The project will use a ```src``` layout:
 ```
 src/
-└── ant_colony/
+└── terroir_simulator/
     ├── domain/
     ├── simulation/
     ├── application/

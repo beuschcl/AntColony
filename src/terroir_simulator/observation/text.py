@@ -1,6 +1,6 @@
 """Plain-text observation of the simulated world."""
 
-from ant_colony.domain import Coordinate, ResourceType, TerrainType, WorldState
+from terroir_simulator.domain import Coordinate, ResourceType, TerrainType, WorldState
 
 _TERRAIN_SYMBOLS: dict[TerrainType, str] = {
     TerrainType.SOIL: "S",

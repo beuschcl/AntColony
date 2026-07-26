@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass, field
 
-from ant_colony.domain.simulation_time import SimulationTime
-from ant_colony.domain.world import World
+from terroir_simulator.domain.simulation_time import SimulationTime
+from terroir_simulator.domain.world import World
 
 
 @dataclass(frozen=True, slots=True)

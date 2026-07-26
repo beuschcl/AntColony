@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from ant_colony.domain.spatial import Coordinate
+from terroir_simulator.domain.spatial import Coordinate
 
 
 class ResourceType(StrEnum):

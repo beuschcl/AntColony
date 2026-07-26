@@ -1,6 +1,6 @@
 """Moisture evaporation computation for the simulated world."""
 
-from ant_colony.domain import MoistureMap, TerrainType, World
+from terroir_simulator.domain import MoistureMap, TerrainType, World
 
 
 def evaporate_moisture(world: World, evaporation_rate: int) -> MoistureMap:

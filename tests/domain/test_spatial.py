@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from ant_colony.domain import Coordinate, WorldDimensions
+from terroir_simulator.domain import Coordinate, WorldDimensions
 
 
 def test_coordinate_preserves_its_components() -> None:

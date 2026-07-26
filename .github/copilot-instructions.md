@@ -1,8 +1,8 @@
-# Ant Colony Copilot Instructions
+# Terroir Simulator Copilot Instructions
 
 ## Project intent
 
-Ant Colony is a deterministic simulation of a living environment that ants will
+Terroir Simulator is a deterministic simulation of a living environment that ants will
 eventually observe, navigate, and interact with.
 
 Development currently focuses only on World v0.1: the environment without ants.

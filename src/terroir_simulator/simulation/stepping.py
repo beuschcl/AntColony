@@ -1,7 +1,7 @@
 """Orchestration for advancing the simulated world."""
 
-from ant_colony.domain import World, WorldState
-from ant_colony.simulation.evaporation import evaporate_moisture
+from terroir_simulator.domain import World, WorldState
+from terroir_simulator.simulation.evaporation import evaporate_moisture
 
 
 def advance_world(state: WorldState, evaporation_rate: int = 0) -> WorldState:

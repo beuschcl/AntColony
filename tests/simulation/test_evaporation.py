@@ -2,7 +2,7 @@
 
 import pytest
 
-from ant_colony.domain import (
+from terroir_simulator.domain import (
     Coordinate,
     MoistureMap,
     ResourceDeposit,
@@ -14,7 +14,7 @@ from ant_colony.domain import (
     WorldDimensions,
     WorldState,
 )
-from ant_colony.simulation import advance_world, run_steps
+from terroir_simulator.simulation import advance_world, run_steps
 
 
 def make_state(

@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from ant_colony.domain import SimulationTime
+from terroir_simulator.domain import SimulationTime
 
 
 def test_simulation_time_begins_at_step_zero_by_default() -> None:

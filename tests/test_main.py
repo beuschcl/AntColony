@@ -1,4 +1,4 @@
-from ant_colony.__main__ import main
+from terroir_simulator.__main__ import main
 
 
 def test_main_displays_initial_and_final_world_states(

@@ -1,4 +1,4 @@
-def test_ant_colony_package_can_be_imported() -> None:
-    import ant_colony
+def test_terroir_simulator_package_can_be_imported() -> None:
+    import terroir_simulator
 
-    assert ant_colony.__name__ == "ant_colony"
+    assert terroir_simulator.__name__ == "terroir_simulator"

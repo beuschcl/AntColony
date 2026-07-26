@@ -1,7 +1,7 @@
 """Operations for running multiple simulation steps."""
 
-from ant_colony.domain import WorldState
-from ant_colony.simulation.stepping import advance_world
+from terroir_simulator.domain import WorldState
+from terroir_simulator.simulation.stepping import advance_world
 
 
 def run_steps(

@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "A deterministic ecosystem environment simulation"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-
+dependencies = [
+    "pygame-ce==2.5.7",
+]
 [dependency-groups]
 dev = [
     "pytest",

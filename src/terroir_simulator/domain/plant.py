@@ -41,11 +41,13 @@ class PlantSpecies:
 
 
 class PlantGrowthStage(Enum):
-    """The lifecycle stage of a plant."""
+    """The shared, species-neutral lifecycle stage of a plant."""
 
     DORMANT = "dormant"
     EMERGING = "emerging"
-    MATURE = "mature"
+    VEGETATIVE = "vegetative"
+    FLOWERING = "flowering"
+    FRUITING = "fruiting"
     SENESCENT = "senescent"
     DEAD = "dead"
 

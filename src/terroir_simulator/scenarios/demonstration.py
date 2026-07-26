@@ -91,7 +91,7 @@ def create_demonstration_state() -> WorldState:
             common_name="Pennsylvania sedge",
             scientific_name="Carex pensylvanica",
         ),
-        growth_stage=PlantGrowthStage.MATURE,
+        growth_stage=PlantGrowthStage.VEGETATIVE,
     )
 
     bellwort = Plant(
@@ -101,7 +101,7 @@ def create_demonstration_state() -> WorldState:
             common_name="Large-flowered bellwort",
             scientific_name="Uvularia grandiflora",
         ),
-        growth_stage=PlantGrowthStage.MATURE,
+        growth_stage=PlantGrowthStage.FLOWERING,
     )
 
     world = world.register_plant(

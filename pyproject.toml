@@ -5,6 +5,11 @@ description = "A deterministic ant colony environment simulation"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 
+[dependency-groups]
+dev = [
+    "pytest",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]

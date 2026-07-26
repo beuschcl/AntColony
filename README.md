@@ -1,5 +1,7 @@
 # Ant Colony
 
+[![Test Suite](https://github.com/beuschcl/AntColony/actions/workflows/tests.yml/badge.svg)](https://github.com/beuschcl/AntColony/actions/workflows/tests.yml)
+
 A deterministic simulation of a living environment that ants will eventually
 observe, navigate, and interact with.
 

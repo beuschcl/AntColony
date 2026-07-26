@@ -5,6 +5,7 @@ import pygame
 from terroir_simulator.domain import (
     Coordinate,
     Plant,
+    PlantGrowthStage,
     ResourceType,
     TerrainType,
     WorldState,
@@ -190,20 +191,35 @@ def _draw_plant(
     tile: pygame.Rect,
     plant: Plant,
 ) -> None:
-    """Draw a plant according to its species identity."""
+    """Draw a plant according to its species identity and lifecycle stage."""
+
+    if plant.growth_stage in {
+        PlantGrowthStage.DORMANT,
+        PlantGrowthStage.DEAD,
+    }:
+        return
 
     if plant.species.species_id == "flora.pennsylvania_sedge":
-        _draw_sedge(canvas, tile)
+        _draw_sedge(canvas, tile, plant.growth_stage)
     elif plant.species.species_id == "flora.large_flowered_bellwort":
-        _draw_bellwort(canvas, tile)
+        _draw_bellwort(canvas, tile, plant.growth_stage)
 
 
-def _draw_sedge(canvas: pygame.Surface, tile: pygame.Rect) -> None:
-    """Draw a soft clump of Pennsylvania sedge."""
+def _draw_sedge(
+    canvas: pygame.Surface,
+    tile: pygame.Rect,
+    growth_stage: PlantGrowthStage,
+) -> None:
+    """Draw Pennsylvania sedge using only its supplied lifecycle stage."""
 
     shadow = pygame.Color("#3f4c32")
     dark_green = pygame.Color("#526b3d")
     light_green = pygame.Color("#8da65e")
+
+    if growth_stage is PlantGrowthStage.SENESCENT:
+        shadow = pygame.Color("#4e4632")
+        dark_green = pygame.Color("#7d7046")
+        light_green = pygame.Color("#b09a5b")
 
     pygame.draw.ellipse(
         canvas,
@@ -211,13 +227,21 @@ def _draw_sedge(canvas: pygame.Surface, tile: pygame.Rect) -> None:
         (tile.centerx - 11, tile.bottom - 8, 22, 5),
     )
 
-    blade_tips = (
-        (tile.left + 7, tile.top + 9),
-        (tile.left + 11, tile.top + 5),
-        (tile.centerx, tile.top + 8),
-        (tile.right - 11, tile.top + 4),
-        (tile.right - 7, tile.top + 10),
-    )
+    blade_tips: tuple[tuple[int, int], ...]
+    if growth_stage is PlantGrowthStage.EMERGING:
+        blade_tips = (
+            (tile.left + 11, tile.centery),
+            (tile.centerx, tile.top + 12),
+            (tile.right - 11, tile.centery + 1),
+        )
+    else:
+        blade_tips = (
+            (tile.left + 7, tile.top + 9),
+            (tile.left + 11, tile.top + 5),
+            (tile.centerx, tile.top + 8),
+            (tile.right - 11, tile.top + 4),
+            (tile.right - 7, tile.top + 10),
+        )
 
     for index, tip in enumerate(blade_tips):
         color = light_green if index % 2 == 0 else dark_green
@@ -229,9 +253,29 @@ def _draw_sedge(canvas: pygame.Surface, tile: pygame.Rect) -> None:
             2,
         )
 
+    if growth_stage is PlantGrowthStage.FLOWERING:
+        culm = pygame.Color("#a99a68")
+        for x_offset, y_offset in ((-5, 5), (5, 7)):
+            pygame.draw.line(
+                canvas,
+                culm,
+                (tile.centerx + x_offset, tile.bottom - 7),
+                (tile.centerx + x_offset, tile.top + y_offset),
+                1,
+            )
+            pygame.draw.rect(
+                canvas,
+                culm,
+                (tile.centerx + x_offset, tile.top + y_offset, 2, 3),
+            )
 
-def _draw_bellwort(canvas: pygame.Surface, tile: pygame.Rect) -> None:
-    """Draw an arching large-flowered bellwort."""
+
+def _draw_bellwort(
+    canvas: pygame.Surface,
+    tile: pygame.Rect,
+    growth_stage: PlantGrowthStage,
+) -> None:
+    """Draw large-flowered bellwort using its supplied lifecycle stage."""
 
     shadow = pygame.Color("#3f4c32")
     stem = pygame.Color("#5f7d43")
@@ -240,11 +284,39 @@ def _draw_bellwort(canvas: pygame.Surface, tile: pygame.Rect) -> None:
     highlight = pygame.Color("#ffe58a")
     center = pygame.Color("#9b7138")
 
+    if growth_stage is PlantGrowthStage.SENESCENT:
+        shadow = pygame.Color("#4e4632")
+        stem = pygame.Color("#806f43")
+        leaf = pygame.Color("#aa9455")
+
     pygame.draw.ellipse(
         canvas,
         shadow,
         (tile.centerx - 9, tile.bottom - 7, 18, 4),
     )
+
+    if growth_stage is PlantGrowthStage.EMERGING:
+        pygame.draw.lines(
+            canvas,
+            stem,
+            False,
+            (
+                (tile.centerx - 3, tile.bottom - 6),
+                (tile.centerx - 2, tile.centery + 3),
+                (tile.centerx + 2, tile.centery),
+            ),
+            2,
+        )
+        pygame.draw.polygon(
+            canvas,
+            leaf,
+            (
+                (tile.centerx - 1, tile.centery + 3),
+                (tile.left + 9, tile.centery),
+                (tile.centerx - 3, tile.centery + 7),
+            ),
+        )
+        return
 
     pygame.draw.lines(
         canvas,
@@ -276,6 +348,30 @@ def _draw_bellwort(canvas: pygame.Surface, tile: pygame.Rect) -> None:
             (tile.centerx + 3, tile.centery + 1),
         ),
     )
+
+    if growth_stage is PlantGrowthStage.FRUITING:
+        capsule = pygame.Color("#a18c52")
+        pygame.draw.polygon(
+            canvas,
+            capsule,
+            (
+                (tile.centerx + 3, tile.top + 10),
+                (tile.centerx + 8, tile.top + 13),
+                (tile.centerx + 4, tile.top + 17),
+                (tile.centerx, tile.top + 13),
+            ),
+        )
+        pygame.draw.line(
+            canvas,
+            center,
+            (tile.centerx + 4, tile.top + 11),
+            (tile.centerx + 4, tile.top + 16),
+            1,
+        )
+        return
+
+    if growth_stage is not PlantGrowthStage.FLOWERING:
+        return
 
     flower_center = (tile.centerx + 6, tile.top + 11)
     petals = (

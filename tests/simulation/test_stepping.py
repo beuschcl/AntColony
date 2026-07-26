@@ -39,7 +39,7 @@ def make_state(step: int = 0) -> WorldState:
     )
 
 
-def make_plant(stage: PlantGrowthStage = PlantGrowthStage.MATURE) -> Plant:
+def make_plant(stage: PlantGrowthStage = PlantGrowthStage.VEGETATIVE) -> Plant:
     return Plant(
         plant_id=PlantId.generate(),
         species=PlantSpecies(

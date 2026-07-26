@@ -48,7 +48,7 @@ def make_species(species_id: str = "oak") -> PlantSpecies:
 
 def make_plant(
     species_id: str = "oak",
-    growth_stage: PlantGrowthStage = PlantGrowthStage.MATURE,
+    growth_stage: PlantGrowthStage = PlantGrowthStage.VEGETATIVE,
 ) -> Plant:
     return Plant(
         plant_id=PlantId.generate(),
@@ -193,7 +193,15 @@ def test_plant_species_rejects_non_str_scientific_name() -> None:
 def test_plant_growth_stage_includes_all_required_stages() -> None:
     stages = {stage.name for stage in PlantGrowthStage}
 
-    assert stages == {"DORMANT", "EMERGING", "MATURE", "SENESCENT", "DEAD"}
+    assert stages == {
+        "DORMANT",
+        "EMERGING",
+        "VEGETATIVE",
+        "FLOWERING",
+        "FRUITING",
+        "SENESCENT",
+        "DEAD",
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -236,7 +244,7 @@ def test_plant_rejects_invalid_plant_id() -> None:
         Plant(
             plant_id="bad-id",  # type: ignore[arg-type]
             species=make_species(),
-            growth_stage=PlantGrowthStage.MATURE,
+            growth_stage=PlantGrowthStage.VEGETATIVE,
         )
 
 
@@ -245,7 +253,7 @@ def test_plant_rejects_invalid_species() -> None:
         Plant(
             plant_id=PlantId.generate(),
             species="not a species",  # type: ignore[arg-type]
-            growth_stage=PlantGrowthStage.MATURE,
+            growth_stage=PlantGrowthStage.VEGETATIVE,
         )
 
 

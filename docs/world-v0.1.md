@@ -139,6 +139,20 @@ Random behavior must be reproducible from the scenario and simulation seed.
 
 Plants are environmental entities with explicit lifecycle state.
 
+The shared code-facing lifecycle vocabulary is:
+
+- `dormant`
+- `emerging`
+- `vegetative`
+- `flowering`
+- `fruiting`
+- `senescent`
+- `dead`
+
+Species may use only the stages that apply to them. Species-specific posture,
+stress, transition order, thresholds, and timing are separate concerns and
+remain deferred until their implementation slices define the required rules.
+
 World v0.1 may eventually support:
 
 - Establishment

@@ -1,5 +1,6 @@
 from terroir_simulator.domain import (
     Coordinate,
+    PlantGrowthStage,
     ResourceDeposit,
     ResourceType,
     SimulationTime,
@@ -66,4 +67,21 @@ def test_demonstration_scenario_contains_explicit_food_deposits() -> None:
             resource_type=ResourceType.FOOD,
             quantity=10,
         ),
+    )
+
+
+def test_demonstration_scenario_uses_meaningful_plant_lifecycle_stages() -> None:
+    state = create_demonstration_state()
+
+    plants_by_species_id = {
+        plant.species.species_id: plant for plant in state.world.all_plants()
+    }
+
+    assert (
+        plants_by_species_id["flora.pennsylvania_sedge"].growth_stage
+        is PlantGrowthStage.VEGETATIVE
+    )
+    assert (
+        plants_by_species_id["flora.large_flowered_bellwort"].growth_stage
+        is PlantGrowthStage.FLOWERING
     )

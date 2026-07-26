@@ -1,6 +1,6 @@
 """Orchestration for advancing the simulated world."""
 
-from terroir_simulator.domain import World, WorldState
+from terroir_simulator.domain import WorldState
 from terroir_simulator.simulation.evaporation import evaporate_moisture
 
 
@@ -23,12 +23,7 @@ def advance_world(state: WorldState, evaporation_rate: int = 0) -> WorldState:
         raise ValueError("evaporation_rate must be a non-negative integer")
 
     new_moisture = evaporate_moisture(state.world, evaporation_rate)
-    new_world = World(
-        dimensions=state.world.dimensions,
-        terrain=state.world.terrain,
-        moisture=new_moisture,
-        resource_deposits=state.world.resource_deposits,
-    )
+    new_world = state.world._replace_moisture(new_moisture)
 
     return WorldState(
         world=new_world,

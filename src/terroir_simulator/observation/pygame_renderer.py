@@ -8,11 +8,23 @@ from terroir_simulator.domain import (
     PlantGrowthStage,
     ResourceType,
     TerrainType,
+    WorldDimensions,
     WorldState,
 )
+from terroir_simulator.simulation import advance_world
 
 _TILE_SIZE = 32
 _DISPLAY_SCALE = 4
+_PLAYBACK_STEP_MS = 300
+_EVAPORATION_RATE = 1
+_PANEL_WIDTH = 380
+_PANEL_MARGIN = 16
+_PANEL_BACKGROUND = pygame.Color("#1d1c18")
+_PANEL_TEXT = pygame.Color("#ebe2c8")
+_PANEL_DIVIDER = pygame.Color("#4a4435")
+_SELECTION_COLOR = pygame.Color("#f6e37a")
+_MOISTURE_OVERLAY = pygame.Color("#6d9dd8")
+_INSPECTOR_SCROLL_STEP_LINES = 3
 
 _TERRAIN_COLORS: dict[TerrainType, pygame.Color] = {
     TerrainType.SOIL: pygame.Color("#667449"),
@@ -34,37 +46,142 @@ def show_world(state: WorldState) -> None:
         state.world.dimensions.width * _TILE_SIZE,
         state.world.dimensions.height * _TILE_SIZE,
     )
-    display_size = (
+    world_display_size = (
         logical_size[0] * _DISPLAY_SCALE,
         logical_size[1] * _DISPLAY_SCALE,
     )
+    display_size = (world_display_size[0] + _PANEL_WIDTH, world_display_size[1])
 
     try:
         canvas = pygame.Surface(logical_size)
         window = pygame.display.set_mode(display_size)
         pygame.display.set_caption("Terroir Simulator")
         clock = pygame.time.Clock()
+        font = pygame.font.Font(None, 24)
 
-        _draw_world(canvas, state)
+        initial_state = state
+        current_state = state
+        selected_coordinate: Coordinate | None = None
+        show_moisture_overlay = False
+        is_playing = False
+        accumulated_playback_ms = 0
+        inspector_scroll_lines = 0
 
         running = True
         while running:
+            elapsed_ms = clock.tick(30)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT or (
                     event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE
                 ):
                     running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        current_state = advance_world(
+                            current_state,
+                            evaporation_rate=_EVAPORATION_RATE,
+                        )
+                        accumulated_playback_ms = 0
+                    elif event.key == pygame.K_p:
+                        is_playing = not is_playing
+                        accumulated_playback_ms = 0
+                    elif event.key == pygame.K_r:
+                        current_state = initial_state
+                        is_playing = False
+                        accumulated_playback_ms = 0
+                        inspector_scroll_lines = 0
+                    elif event.key == pygame.K_m:
+                        show_moisture_overlay = not show_moisture_overlay
+                    elif event.key == pygame.K_UP:
+                        inspector_scroll_lines = _scroll_inspector(
+                            inspector_scroll_lines,
+                            delta_lines=-_INSPECTOR_SCROLL_STEP_LINES,
+                            total_lines=len(
+                                _inspector_lines(current_state, selected_coordinate)
+                            ),
+                            visible_lines=_inspector_visible_line_capacity(
+                                panel_height=world_display_size[1],
+                                line_height=font.get_linesize(),
+                            ),
+                        )
+                    elif event.key == pygame.K_DOWN:
+                        inspector_scroll_lines = _scroll_inspector(
+                            inspector_scroll_lines,
+                            delta_lines=_INSPECTOR_SCROLL_STEP_LINES,
+                            total_lines=len(
+                                _inspector_lines(current_state, selected_coordinate)
+                            ),
+                            visible_lines=_inspector_visible_line_capacity(
+                                panel_height=world_display_size[1],
+                                line_height=font.get_linesize(),
+                            ),
+                        )
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    next_selected_coordinate = _coordinate_from_screen_position(
+                        event.pos,
+                        current_state.world.dimensions,
+                    )
+                    if next_selected_coordinate != selected_coordinate:
+                        inspector_scroll_lines = 0
+                    selected_coordinate = next_selected_coordinate
 
-            enlarged = pygame.transform.scale(canvas, display_size)
+            if is_playing:
+                accumulated_playback_ms += elapsed_ms
+                while accumulated_playback_ms >= _PLAYBACK_STEP_MS:
+                    current_state = advance_world(
+                        current_state,
+                        evaporation_rate=_EVAPORATION_RATE,
+                    )
+                    accumulated_playback_ms -= _PLAYBACK_STEP_MS
+
+            _draw_world(
+                canvas,
+                current_state,
+                selected_coordinate=selected_coordinate,
+                show_moisture_overlay=show_moisture_overlay,
+            )
+
+            window.fill(_PANEL_BACKGROUND)
+            enlarged = pygame.transform.scale(canvas, world_display_size)
             window.blit(enlarged, (0, 0))
+            inspector_lines = _inspector_lines(current_state, selected_coordinate)
+            inspector_scroll_lines = _scroll_inspector(
+                inspector_scroll_lines,
+                delta_lines=0,
+                total_lines=len(inspector_lines),
+                visible_lines=_inspector_visible_line_capacity(
+                    panel_height=world_display_size[1],
+                    line_height=font.get_linesize(),
+                ),
+            )
+            _draw_inspector_panel(
+                window,
+                pygame.Rect(
+                    world_display_size[0],
+                    0,
+                    _PANEL_WIDTH,
+                    world_display_size[1],
+                ),
+                font,
+                inspector_lines,
+                scroll_lines=inspector_scroll_lines,
+            )
             pygame.display.flip()
-            clock.tick(30)
     finally:
         pygame.quit()
 
 
-def _draw_world(canvas: pygame.Surface, state: WorldState) -> None:
+def _draw_world(
+    canvas: pygame.Surface,
+    state: WorldState,
+    *,
+    selected_coordinate: Coordinate | None = None,
+    show_moisture_overlay: bool = False,
+) -> None:
     """Draw terrain and resources without changing world state."""
+
+    canvas.fill(pygame.Color("black"))
 
     for coordinate in state.world.iter_coordinates():
         terrain = state.world.terrain_at(coordinate)
@@ -78,6 +195,13 @@ def _draw_world(canvas: pygame.Surface, state: WorldState) -> None:
         pygame.draw.rect(canvas, _TERRAIN_COLORS[terrain], tile)
         _draw_terrain_details(canvas, tile, terrain, coordinate)
 
+        if show_moisture_overlay:
+            _draw_moisture_overlay(
+                canvas,
+                tile,
+                moisture=state.world.moisture_at(coordinate),
+            )
+
         food = state.world.resource_quantity_at(
             coordinate,
             ResourceType.FOOD,
@@ -90,6 +214,171 @@ def _draw_world(canvas: pygame.Surface, state: WorldState) -> None:
 
         if coordinate == Coordinate(x=4, y=2):
             _draw_preview_ant(canvas, tile)
+
+        if coordinate == selected_coordinate:
+            _draw_selection_outline(canvas, tile)
+
+
+def _coordinate_from_screen_position(
+    position: tuple[int, int],
+    dimensions: WorldDimensions,
+) -> Coordinate | None:
+    """Return the selected world coordinate for a scaled screen position."""
+
+    if not isinstance(dimensions, WorldDimensions):
+        raise TypeError("dimensions must be WorldDimensions")
+
+    x, y = position
+    if x < 0 or y < 0:
+        return None
+
+    coordinate = Coordinate(
+        x=x // (_TILE_SIZE * _DISPLAY_SCALE),
+        y=y // (_TILE_SIZE * _DISPLAY_SCALE),
+    )
+    if not dimensions.contains(coordinate):
+        return None
+
+    return coordinate
+
+
+def _inspector_lines(
+    state: WorldState,
+    selected_coordinate: Coordinate | None,
+) -> tuple[str, ...]:
+    """Return deterministic inspector text for the selected coordinate."""
+
+    if not isinstance(state, WorldState):
+        raise TypeError("state must be WorldState")
+
+    lines = [f"step: {state.time.step}"]
+
+    if selected_coordinate is None:
+        return (
+            *lines,
+            "selected: none",
+            "terrain: -",
+            "moisture: -",
+            "food: -",
+            "plants: none",
+        )
+
+    if not state.world.contains(selected_coordinate):
+        raise ValueError("selected_coordinate must be within world bounds")
+
+    food_quantity = state.world.resource_quantity_at(
+        selected_coordinate,
+        ResourceType.FOOD,
+    )
+    lines.extend(
+        (
+            f"selected: ({selected_coordinate.x}, {selected_coordinate.y})",
+            f"terrain: {state.world.terrain_at(selected_coordinate).value}",
+            f"moisture: {state.world.moisture_at(selected_coordinate)}",
+            f"food: {food_quantity}",
+        )
+    )
+
+    plants = state.world.plants_at(selected_coordinate)
+    if not plants:
+        lines.append("plants: none")
+        return tuple(lines)
+
+    lines.append("plants:")
+    for plant in plants:
+        lines.extend(
+            (
+                f"- {plant.species.common_name}",
+                f"  scientific: {plant.species.scientific_name}",
+                f"  stage: {plant.growth_stage.value}",
+                "  plant_id:",
+                f"    {plant.plant_id.value}",
+            )
+        )
+
+    return tuple(lines)
+
+
+def _draw_inspector_panel(
+    surface: pygame.Surface,
+    panel: pygame.Rect,
+    font: pygame.font.Font,
+    inspector_lines: tuple[str, ...],
+    *,
+    scroll_lines: int,
+) -> None:
+    """Draw an inspector panel beside the world view."""
+
+    pygame.draw.rect(surface, _PANEL_BACKGROUND, panel)
+    pygame.draw.line(surface, _PANEL_DIVIDER, panel.topleft, panel.bottomleft, 2)
+
+    previous_clip = surface.get_clip()
+    content_rect = pygame.Rect(
+        panel.left + _PANEL_MARGIN,
+        panel.top + _PANEL_MARGIN,
+        panel.width - (2 * _PANEL_MARGIN),
+        panel.height - (2 * _PANEL_MARGIN),
+    )
+    surface.set_clip(content_rect)
+
+    y = panel.top + _PANEL_MARGIN - (scroll_lines * font.get_linesize())
+    for line in inspector_lines:
+        label = font.render(line, True, _PANEL_TEXT)
+        surface.blit(label, (panel.left + _PANEL_MARGIN, y))
+        y += font.get_linesize()
+
+    surface.set_clip(previous_clip)
+
+
+def _inspector_visible_line_capacity(panel_height: int, line_height: int) -> int:
+    """Return how many text rows fit in the inspector panel."""
+
+    visible_height = panel_height - (2 * _PANEL_MARGIN)
+    if visible_height <= 0 or line_height <= 0:
+        return 1
+
+    return max(1, visible_height // line_height)
+
+
+def _scroll_inspector(
+    scroll_lines: int,
+    *,
+    delta_lines: int,
+    total_lines: int,
+    visible_lines: int,
+) -> int:
+    """Return a bounded vertical inspector scroll offset in text rows."""
+
+    maximum_scroll = max(0, total_lines - visible_lines)
+    next_scroll = scroll_lines + delta_lines
+    if next_scroll < 0:
+        return 0
+    if next_scroll > maximum_scroll:
+        return maximum_scroll
+    return next_scroll
+
+
+def _draw_selection_outline(canvas: pygame.Surface, tile: pygame.Rect) -> None:
+    """Draw a visible outline around the selected tile."""
+
+    pygame.draw.rect(canvas, _SELECTION_COLOR, tile, 2)
+
+
+def _draw_moisture_overlay(
+    canvas: pygame.Surface,
+    tile: pygame.Rect,
+    *,
+    moisture: int,
+) -> None:
+    """Tint a tile by its moisture so evaporation becomes visible."""
+
+    if moisture <= 0:
+        return
+
+    alpha = 32 + ((moisture * 128) // 100)
+    overlay = pygame.Surface(tile.size, pygame.SRCALPHA)
+    overlay.fill((*_MOISTURE_OVERLAY[:3], alpha))
+    canvas.blit(overlay, tile.topleft)
 
 
 def _draw_terrain_details(
